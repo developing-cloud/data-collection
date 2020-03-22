@@ -1,0 +1,32 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: AWS::Serverless-2016-10-31
+Description: An AWS Lambda function for collecting photos
+Parameters:
+  envType:
+    Type: String
+Resources:
+  vehiclePhotosBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub cloud.developing.toll-registry.vehicle-photos-${AWS::Region}-${envType}
+      VersioningConfiguration:
+        Status: Enabled
+  lambdaDc:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub data-collection-${envType}
+      Handler: dc.lambda_handler
+      Runtime: python3.8
+      CodeUri: .
+      MemorySize: 256
+      Timeout: 30
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/dc-lambda-execution-role
+      Events:
+        S3Event:
+          Type: S3
+          Properties:
+            Bucket: !Ref vehiclePhotosBucket
+            Events: s3:ObjectCreated:*
+      Environment:
+        Variables:
+          ENV_TYPE: !Sub ${envType}
